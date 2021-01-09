@@ -1,0 +1,164 @@
+/* css reset */
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* Navigation bar */
+#navbar {
+	display: flex;
+	align-items: center;
+	position: sticky;
+	top: 0px;
+	
+}
+
+#navbar::before {
+	content: "";
+	background-color: white;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	height: 100%;
+	width: 100%;
+	z-index: -1;
+	opacity: 0.96;
+	box-shadow: 0px 1px 10px #999;
+	
+}
+
+}
+/*Navigation bar: logo and image */
+#logo {
+	margin: 10px 34px;
+}
+
+#logo img {
+	height: 59px;
+	margin: 3px 6px;
+}
+
+/*Navigation bar: list styling */
+
+#navbar ul {
+	display: flex;
+}
+
+#navbar ul li {
+	color: black;
+	list-style: none;
+	font-size: 1.3rem;
+}
+
+#navbar ul li a {
+	color: black; 
+	display: black;
+	padding: 3px 22px;
+	border-radious: 20px;
+	text-decoration: none;
+	
+}
+
+#navbar ul li a:hover {
+	color: white; 
+	background-color: black;
+}
+
+/*Home Section*/
+#home {
+	display: flex;
+	flex-direction: column;
+	padding: 3px 200px;
+	height: 550px;
+	justify-content: center;
+	align-items: center;
+}
+
+#home::before {
+	content: "";
+	position: absolute;
+	background-image: url('E:\4th_Yr_Project/my_icon.png');
+	height: 100%;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	z-index: -1;
+	opacity: 0.89;
+}
+
+#home h1 {
+	color: white;
+	text-align: center;
+}
+
+#home p {
+	color: black;
+	text-align: center;
+	font-size: 1.5rem;
+	font-family: Serif;
+}
+
+/*Services Section*/
+#services {
+	margin: 34px;
+	display: flex;
+	justify-content: center;
+}
+#services .box {
+	border: 2px solid brown;
+	padding: 34px;
+	margin: 3px 26px;
+	background: #f2f2f2;
+	box-shadow: 5px 5px 5px 5px #777777;
+}
+
+#services .box img {
+	height: 150px;;
+	margin: auto;
+	display: block;
+}
+
+/*Utility class*/
+.h-primary {
+	font-size: 3.8rem;
+	padding: 12px;
+}
+
+.h-secondary {
+	font-size: 1.8rem;
+	padding: 12px;
+}
+
+.btn {
+	padding: 6px 20px;
+	border: 2px solid white;
+	background-color: brown;
+	color: white;
+	margin: 17px;
+	font-size: 1.5rem;
+	cursor: pointer;
+}
+
+.center {
+	text-align: center;
+}
+
+.Stuff {
+	border: 2px solid black;
+	background-color: white;
+	padding: inherit;
+	box-shadow: 5px 5px 5px 5px #777777;
+	margin: 50px;
+	justify-content: center;
+	text-align: center;
+}
+
+footer {
+	background: black;
+	color: white;
+	padding: 9px 20px;
+}
