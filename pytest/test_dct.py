@@ -10,11 +10,22 @@ from scipy.fftpack import dct, idct # to evaluate our results
 # set the seed for consistency
 np.random.seed(2021)
 
-def dct2 (block):
+def dct2(block):
     '''
-    implements the inbuilt dct function from the scipy module
+    implements the builtin dct function from the scipy module
     '''
     return dct(dct(block.T, type=2, norm = 'ortho').T, type=2, norm = 'ortho')
+
+
+def dct3(img):
+    '''
+    implements the builtin dct function from the scipy module
+    '''
+    res = np.zeros(img.shape)
+    for i in range(img.shape[-1]):
+        res[:, :, i] = dct2(img[:, :, i])
+
+    return res
 
 
 class TestDCT(unittest.TestCase):
@@ -50,8 +61,9 @@ class TestDCT(unittest.TestCase):
         assert (np.allclose(res, goal)), "test_dct1D() of length 100 FAIL!"
 
     def test_dct2D(self):
-        # 2D array of dimention 2 x 2
-        arr = np.array([[64, 39], [27, 82]])
+        # 2D array of dimention 2x2
+        arr = np.array([[64, 39],
+                        [27, 82]])
         # manual dct2D()
         res = dct2D(arr)
         # builtin dct2D() by scipy
@@ -59,7 +71,7 @@ class TestDCT(unittest.TestCase):
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct2D() of shape 2x2 FAIL!"
 
-        # 2D array of dimention 50 x 50
+        # 2D array of dimention 50x50
         arr = np.random.randint(low=9, high=9999, size=(50, 50))
         # manual dct2D()
         res = dct2D(arr)
@@ -68,7 +80,7 @@ class TestDCT(unittest.TestCase):
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct2D() of shape 50x50 FAIL!"
 
-        # 2D array of dimention 30 x 70
+        # 2D array of dimention 30x70
         arr = np.random.randint(low=-9999, high=9999, size=(30, 70))
         # manual dct2D()
         res = dct2D(arr)
@@ -77,7 +89,7 @@ class TestDCT(unittest.TestCase):
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct2D() of shape 30x70 FAIL!"
 
-        # check for identity matrix
+        # check for identity matrix (15x15)
         arr = np.eye(15)
         # manual dct2D()
         res = dct2D(arr)
@@ -85,5 +97,41 @@ class TestDCT(unittest.TestCase):
         goal = dct2(arr)
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct2D() of identity matrix FAIL!"
+
+    def test_dct3D(self):
+        # 3D array of dimention 2x2x2
+        arr = np.array([[[64, 39],
+                         [27, 82]],
+
+                        [[45, 99],
+                         [73, 2 ]]])
+        # manual dct3D()
+        res = dct3D(arr)
+        # builtin dct3D() by scipy
+        goal = dct3(arr)
+        # check if they are same
+        assert (np.allclose(res, goal)), "test_dct3D() of shape 2x2x2 FAIL!"
+
+        # 3D array of dimention 27x83x32
+        arr = np.random.randint(low=-9999, high=9999, size=(27, 83, 32))
+        # manual dct3D()
+        res = dct3D(arr)
+        # builtin dct3D() by scipy
+        goal = dct3(arr)
+        # check if they are same
+        assert (np.allclose(res, goal)), "test_dct3D() of shape 27x83x32 FAIL!"
+
+        #------ TOO SLOW -----#
+        '''
+        # test for simulated 1024x720x3 image
+        arr = np.random.randint(low=0, high=256,
+                                size=(1024, 720, 3), dtype=np.uint8)
+        # manual dct3D()
+        res = dct3D(arr)
+        # builtin dct3D() by scipy
+        goal = dct3(arr)
+        # check if they are same
+        assert (np.allclose(res, goal)), "test_dct3D() of shape 1024x720x3 FAIL!"
+        '''
 
 
