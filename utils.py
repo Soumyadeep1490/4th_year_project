@@ -168,3 +168,70 @@ def idct2D(x):
     # return the IDCT of the given 2D array/matrix
     return X
 
+
+# function to perform DCT on a 3D matrix (image)
+def dct3D(img):
+    '''
+    this function takes an image matrix (3D RGB) and performs DCT on that image
+    we seperately apply dct2D on each of the three channels and combine them to
+    get an overall dct of the image
+    this also supports any shape of 3D matrix not only 3 channel images
+
+    this function returns the DCT transform of the given RGB image
+    '''
+    # check if the image is 3D
+    assert (len(img.shape) == 3), "ERROR[dct3D()]: NOT A 3D ARRAY!!"
+
+    # get the number of channels
+    n = img.shape[-1]
+    # initialize an list to store the channels
+    channels = []
+
+    # seperate each channel as 2D matrix
+    for i in range(n):
+        channels.append(img[:, :, i])
+
+    # initialize the resultant DCT transform of the given image
+    res = np.zeros(img.shape)
+
+    # apply and combine the DCT transform of each channel seperately
+    for i in range(n):
+        res[:, :, i] = dct2D(channels[i])
+
+    # return the DCT of the given image
+    return res
+
+
+# function to perform IDCT on a 3D matrix (image)
+def idct3D(img):
+    '''
+    this function takes a DCT of image matrix (3D RGB) and performs IDCT on
+    that image
+    we seperately apply idct2D on each of the three channels and combine them to
+    get an overall idct of the image
+    this also supports any shape of 3D matrix not only 3 channel images
+
+    this function returns the IDCT transform of the given DCT of the RGB image
+    '''
+    # check if the image is 3D
+    assert (len(img.shape) == 3), "ERROR[idct3D()]: NOT A 3D ARRAY!!"
+
+    # get the number of channels
+    n = img.shape[-1]
+    # initialize an list to store the channels
+    channels = []
+
+    # seperate each channel as 2D matrix
+    for i in range(n):
+        channels.append(img[:, :, i])
+
+    # initialize the resultant DCT transform of the given image
+    res = np.zeros(img.shape)
+
+    # apply and combine the DCT transform of each channel seperately
+    for i in range(n):
+        res[:, :, i] = idct2D(channels[i])
+
+    # return the DCT of the given image
+    return res
+
