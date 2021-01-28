@@ -4,12 +4,14 @@ import numpy as np
 from scipy.fftpack import dct, idct
 
 # Discrete Cosine Transform
-# for a 2D image DCT-II is given as f(x, y) => F(u, v)
-# IDCT in matrix form: f = (C.T)FC | C.T -> C transpose
-# if we can make this orthogonal then we can easily inverse this hence get IDCT
-# very easily
+# here all the calculations and modifications are done according to the
+# wikipedia entry of DCT
+# https://en.wikipedia.org/wiki/Discrete_cosine_transform
+#
+# orthogonality feature helps us to apply DCT and inverse (IDCT) it very easily
+# to make it orthoonal we have to modify the resultant array (see below)
 
-# function to get the DCT coefficient matrix
+# function to get DCT on a 1D array
 def dct1D(x):
     '''
     this function takes an 1D array/vector as an input of dimention N and we
@@ -27,7 +29,7 @@ def dct1D(x):
     this function returns the dct of the given 1D array/vector
     '''
     # check if the input array is 1D
-    assert (len(x.shape) == 1), "NOT A 1D ARRAY!!"
+    assert (len(x.shape) == 1), "ERROR[dct1D()]: NOT A 1D ARRAY!!"
 
     # get the dimention
     N = x.shape[0]
@@ -89,34 +91,50 @@ def dct2D(x):
     return np.round(X, 3)
 
 
-# function to perform IDCT on a matrix
-def _idct(MAT):
+# function to perform IDCT on a 1D array
+def idct1D(x):
     '''
-    this function takes an image array and performs the IDCT transformation on
-    the matrix
+    this function takes an 1D array/vector and performs the IDCT (DCT-III)
+    transformation on the array/vector
 
-    C -> DCT matrix of size N x N
-    C.T -> C transpose
-    IDCT in matrix form: f = (C.T)FC
+    https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-III
+              N-1
+    Xk = ½x0 + ∑ xn cos[(𝝅/N) (k + ½) n]      k = 0,...., N - 1
+              n=1
 
-    this function returns the IDCT transformation of the given matrix
+    to make it orthogonal we have devide the first term by √2 instead of 2 and
+    then we have to multiply the resultant array/vector by √(2 / N)
+
+    this function returns the IDCT transformation of the given array/vector
     '''
+    # check if the input array is 1D
+    assert (len(x.shape) == 1), "ERROR[idct1D()]: NOT A 1D ARRAY!!"
+
     # get the dimentions
-    M, N = MAT.shape
+    N = x.shape
 
-    # for now M = N
-    assert (M == N), "NOT A SQUARE MATRIX!!"
+    # initialize the resultant IDCT array
+    X = np.zeros((N))
 
-    # get the DCT matrix of the dimention
-    C = dct_mat(M)
-    # get the transpose of the DCT matrix
-    CT = C.T
-    # get the DCT transformation
-    out = np.matmul(np.matmul(CT, MAT), C)
+    # calculate the first term
+    x0 = x[0] * np.sqrt(1 / 2)
 
-    # return the transformed matrix rounded to 3 digits after decimal
-    return np.round(out, 3)
+    # populate the resultant IDCT array
+    for k in range(N):
+        a = x0
+        for n in range(1, N):
+            a += np.cos((np.pi / N) * n * (k + (1 / 2))) * x[n]
 
+        # modify all the terms for orthogonality
+        X[k] = a * np.sqrt(2 / N)
+
+    # return the IDCT of the given array/vector
+    return X
+
+
+# function to perform IDCT(DCT-III) on a 2D array
+def idct2D(x):
+    pass
 
 def dct2_ (block):
     '''
