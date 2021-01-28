@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
-
 import numpy as np
-from scipy.fftpack import dct, idct
 
 # Discrete Cosine Transform
 # here all the calculations and modifications are done according to the
@@ -171,38 +168,3 @@ def idct2D(x):
     # return the IDCT of the given 2D array/matrix
     return X
 
-
-def dct2_ (block):
-    '''
-    implements the inbuilt dct function from the scipy module
-    '''
-    return dct(dct(block.T, norm = 'ortho').T, norm = 'ortho')
-
-
-np.random.seed(2021)
-
-arr = np.random.randint(low=0, high=255, size=(3, 3, 3), dtype=np.uint8)
-arr0 = arr[:, :, 0]
-arr1 = arr[:, :, 1]
-arr2 = arr[:, :, 2]
-
-_F = np.zeros((3, 3, 3))
-_F[:, :, 0] = dct2D(arr0)
-_F[:, :, 1] = dct2D(arr1)
-_F[:, :, 2] = dct2D(arr2)
-
-F = np.zeros((3, 3, 3))
-F[:, :, 0] = np.round(dct2_(arr0), 3)
-F[:, :, 1] = np.round(dct2_(arr1), 3)
-F[:, :, 2] = np.round(dct2_(arr2), 3)
-
-f = np.zeros((3, 3, 3))
-f[:, :, 0] = idct2D(_F[:, :, 0])
-f[:, :, 1] = idct2D(_F[:, :, 1])
-f[:, :, 2] = idct2D(_F[:, :, 2])
-
-if np.allclose(_F, F):
-    print('SAME')
-
-if np.allclose(arr, f):
-    print('idct works')
