@@ -11,6 +11,7 @@ from scipy.fftpack import dct, idct
 # orthogonality feature helps us to apply DCT and inverse (IDCT) it very easily
 # to make it orthoonal we have to modify the resultant array (see below)
 
+
 # function to get DCT on a 1D array
 def dct1D(x):
     '''
@@ -72,6 +73,9 @@ def dct2D(x):
 
     this function returns the DCT transformation of the given matrix
     '''
+    # check if the input is 2D
+    assert (len(x.shape) == 2), "ERROR[dct2D()]: NOT A 2D ARRAY!!"
+
     # get the dimentions
     N1, N2 = x.shape
 
@@ -87,8 +91,8 @@ def dct2D(x):
     for k2 in range(N2):
         X[:, k2] = dct1D(X[:, k2])
 
-    # round the results to 3 digits after decimal point
-    return np.round(X, 3)
+    # return the resultant DCT of the given 2D array/matrix
+    return X
 
 
 # function to perform IDCT on a 1D array
@@ -111,7 +115,7 @@ def idct1D(x):
     assert (len(x.shape) == 1), "ERROR[idct1D()]: NOT A 1D ARRAY!!"
 
     # get the dimentions
-    N = x.shape
+    N = x.shape[0]
 
     # initialize the resultant IDCT array
     X = np.zeros((N))
@@ -134,7 +138,39 @@ def idct1D(x):
 
 # function to perform IDCT(DCT-III) on a 2D array
 def idct2D(x):
-    pass
+    '''
+    this function takes a 2D array/matrix x with dimention N1 x N2 and performs
+    the IDCT(DCT-III) transformation on that array/matrix
+
+    https://en.wikipedia.org/wiki/Discrete_cosine_transform#M-D_DCT-II
+
+    IDCT is just a separable product of the inverses of the corresponding
+    one-dimensional IDCT, e.g. the one-dimensional inverses applied along one
+    dimension at a time in a row-column algorithm
+
+    this function returns the IDCT of the given 2D array/matrix
+    '''
+    # check if the input is 2D
+    assert (len(x.shape) == 2), "ERROR[idct2D()]: NOT A 2D ARRAY!!"
+
+    # get the dimentions
+    N1, N2 = x.shape
+
+    # initialize the resultant IDCT of the array
+    X = np.zeros((N1, N2))
+
+    # perform the IDCT along rows of the given 2D array
+    for k1 in range(N1):
+        X[k1, :] = idct1D(x[k1, :])
+
+    # perform the IDCT along the columns of the resultant array of the above
+    # operation
+    for k2 in range(N2):
+        X[:, k2] = idct1D(X[:, k2])
+
+    # return the IDCT of the given 2D array/matrix
+    return X
+
 
 def dct2_ (block):
     '''
@@ -160,5 +196,13 @@ F[:, :, 0] = np.round(dct2_(arr0), 3)
 F[:, :, 1] = np.round(dct2_(arr1), 3)
 F[:, :, 2] = np.round(dct2_(arr2), 3)
 
+f = np.zeros((3, 3, 3))
+f[:, :, 0] = idct2D(_F[:, :, 0])
+f[:, :, 1] = idct2D(_F[:, :, 1])
+f[:, :, 2] = idct2D(_F[:, :, 2])
+
 if np.allclose(_F, F):
     print('SAME')
+
+if np.allclose(arr, f):
+    print('idct works')
