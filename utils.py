@@ -1,237 +1,116 @@
+#!/usr/bin/env python3
 import numpy as np
+from scipy.fftpack import dct, idct
 
 # Discrete Cosine Transform
-# here all the calculations and modifications are done according to the
-# wikipedia entry of DCT
-# https://en.wikipedia.org/wiki/Discrete_cosine_transform
-#
-# orthogonality feature helps us to apply DCT and inverse (IDCT) it very easily
-# to make it orthoonal we have to modify the resultant array (see below)
+# this is a faster implementation of a faster DCT algorithm than the standard
+# one
+# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.463.3353&rep=rep1&type=pdf
+# https://web.stanford.edu/class/ee398a/handouts/lectures/07-TransformCoding.pdf#page=30
+# it olny requires 5 multiplications and 29 additions on a vector of length 8
 
-
-# function to get DCT on a 1D array
+# function to implement dct faster
 def dct1D(x):
     '''
-    this function takes an 1D array/vector as an input of dimention N and we
-    apply the 1D DCT-II to get the DCT of the array/vector
+    this function takes an vector x of length 8 as input and the dct algorithm
+    is applied to it
 
-    https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-II
-        N-1
-    Xk = ∑ xn cos[(n/𝝅) (n + ½) k]      k = 0,...., N - 1
-        n=0
+    # https://web.stanford.edu/class/ee398a/handouts/lectures/07-TransformCoding.pdf#page=30
 
-    to make it easily invertable we have to make it orthogonal and to do that
-    we need to multily the X0 term with (1 / √2) and then multiply the
-    resultant array elements with √(2 / N)
-
-    this function returns the dct of the given 1D array/vector
+    this function returns the dct of the given array
     '''
-    # check if the input array is 1D
-    assert (len(x.shape) == 1), "ERROR[dct1D()]: NOT A 1D ARRAY!!"
+    # check the input length is 8 at maximum
+    assert (len(x) <= 8), "ERROR! Must have less than 8 elements"
 
-    # get the dimention
-    N = x.shape[0]
+    # if the length is less than 8 zero pad the rest
+    x = x + [0] * (8 - len(x))
+    # x += x[:8 - len(x)]
 
-    # initializing resultant array/vector
-    X = np.zeros((N))
+    # required constant vectors
+    # Ck = cos((𝝅 / 16) * k)    # k = 0,..., 7
+    c = [np.cos((np.pi / 16) * k) for k in range(8)]
+    # Sk = 1 / (4 * Ck)         # k = 1,..., 7
+    s = [(1 / (4 * c[k])) for k in range(8)]
+    # S0 = 1 / (2√2)
+    s[0] = 1 / (2 * (2 ** 0.5))
 
-    # populate the resuktant array/vector
-    for k in range(N):
-        a = 0
-        for n in range(N):
-            a += np.cos((np.pi / N) * (n + (1 / 2)) * k) * x[n]
+    a = [c[4], c[2] - c[6], c[4], c[6] + c[2], c[6]]
 
-        # handle the 0th term (special case)
-        if k == 0:
-            a *= np.sqrt(1 / 2)
+    # NOTE: names are given as: f[stage index][signal index] | 0-based indexing
+    # eg:
+    #     o/p of x0 at 2nd stage -> f10
+    # [+] o/p of x5 at 3rd stage -> f25
+    # ---------------------------------------------
+    # produces x5 at 4th stage   -> f35 = f10 + f25
 
-        # modify all the elements to make it orthogonal
-        X[k] = a * np.sqrt(2 / N)
+    # first stage computations
+    f00 = x[0] + x[7]            # x0
+    f01 = x[1] + x[6]            # x1
+    f02 = x[2] + x[5]            # x2
+    f03 = x[3] + x[4]            # x3
+    f04 = x[3] - x[4]            # x4
+    f05 = x[2] - x[5]            # x5
+    f06 = x[1] - x[6]            # x6
+    f07 = x[0] - x[7]            # x7
 
-    # return the resultant DCT transformed array/vector
-    return X
+    # second stage computations
+    f10 = f00 + f03              # x0
+    f11 = f01 + f02              # x1
+    f12 = f01 - f02              # x2
+    f13 = f00 - f03              # x3
+    f14 = -(f05 + f04)           # x4
+    f15 = f05 + f06              # x5
+    f16 = f06 + f07              # x6
 
+    # thrid stage computatiions
+    f20 = f10 + f11              # x0
+    f21 = f10 - f11              # x1
+    f22 = f12 + f13              # x2
 
-# function to perform DCT on a matrix
-def dct2D(x):
-    '''
-    this function takes a 2D array/matrix x with dimention N1 x N2 and performs
-    the DCT transformation on that array/matrix
+    # fourth stage computations
+    f32 = f22 * a[0]            # x2
+    f34 = f14 * a[1]            # x4
+    f35 = f15 * a[2]            # x5
+    f36 = f16 * a[3]            # x6
+    tmp = (f14 + f16) * a[4]
 
-    https://en.wikipedia.org/wiki/Discrete_cosine_transform#M-D_DCT-II
+    # fifth stage computations
+    f44 = -(f34 + tmp)          # x4
+    f46 = f36 - tmp             # x6
 
-    two-dimensional DCT-II of an image or a matrix is simply the
-    one-dimensional DCT-II, from above, performed along the rows and then along
-    the columns (or vice versa)
+    # sixth stage computations
+    f52 = f32 + f13             # x2
+    f53 = f13 - f32             # x3
+    f55 = f35 + f07             # x5
+    f57 = f07 - f35             # x7
 
-    as this is a 2D implementation it'll work only in one color channel
-    so to get a dct transformation on a RGB image we have to call this function
-    3 times with each of the 3 channels
+    # seventh stage computations
+    f64 = f44 + f57             # x4
+    f65 = f55 + f46             # x5
+    f66 = f55 - f46             # x6
+    f67 = f57 - f44             # x7
 
-    this function returns the DCT transformation of the given matrix
-    '''
-    # check if the input is 2D
-    assert (len(x.shape) == 2), "ERROR[dct2D()]: NOT A 2D ARRAY!!"
+    # eighth stage computations
+    f70 = f20 * s[0]            # x0
+    f71 = f21 * s[4]            # x1
+    f72 = f52 * s[2]            # x2
+    f73 = f53 * s[6]            # x3
+    f74 = f64 * s[5]            # x4
+    f75 = f65 * s[1]            # x5
+    f76 = f66 * s[7]            # x6
+    f77 = f67 * s[3]            # x7
 
-    # get the dimentions
-    N1, N2 = x.shape
-
-    # initialize the resultant DCT transformation of the given matrix
-    X = np.zeros((N1, N2))
-
-    # first perform 1D DCT along the rows of the matrix
-    for k1 in range(N1):
-        X[k1, :] = dct1D(x[k1, :])
-
-    # then perform 1D DCT along the columns of the matrix generated from the
-    # pervious step
-    for k2 in range(N2):
-        X[:, k2] = dct1D(X[:, k2])
-
-    # return the resultant DCT of the given 2D array/matrix
-    return X
-
-
-# function to perform IDCT on a 1D array
-def idct1D(x):
-    '''
-    this function takes an 1D array/vector and performs the IDCT (DCT-III)
-    transformation on the array/vector
-
-    https://en.wikipedia.org/wiki/Discrete_cosine_transform#DCT-III
-              N-1
-    Xk = ½x0 + ∑ xn cos[(𝝅/N) (k + ½) n]      k = 0,...., N - 1
-              n=1
-
-    to make it orthogonal we have devide the first term by √2 instead of 2 and
-    then we have to multiply the resultant array/vector by √(2 / N)
-
-    this function returns the IDCT transformation of the given array/vector
-    '''
-    # check if the input array is 1D
-    assert (len(x.shape) == 1), "ERROR[idct1D()]: NOT A 1D ARRAY!!"
-
-    # get the dimentions
-    N = x.shape[0]
-
-    # initialize the resultant IDCT array
-    X = np.zeros((N))
-
-    # calculate the first term
-    x0 = x[0] * np.sqrt(1 / 2)
-
-    # populate the resultant IDCT array
-    for k in range(N):
-        a = x0
-        for n in range(1, N):
-            a += np.cos((np.pi / N) * n * (k + (1 / 2))) * x[n]
-
-        # modify all the terms for orthogonality
-        X[k] = a * np.sqrt(2 / N)
-
-    # return the IDCT of the given array/vector
-    return X
+    # rearrange the final components in the correct order to get the dct
+    return [f70, f75, f72, f77, f71, f74, f73, f76]
 
 
-# function to perform IDCT(DCT-III) on a 2D array
-def idct2D(x):
-    '''
-    this function takes a 2D array/matrix x with dimention N1 x N2 and performs
-    the IDCT(DCT-III) transformation on that array/matrix
-
-    https://en.wikipedia.org/wiki/Discrete_cosine_transform#M-D_DCT-II
-
-    IDCT is just a separable product of the inverses of the corresponding
-    one-dimensional IDCT, e.g. the one-dimensional inverses applied along one
-    dimension at a time in a row-column algorithm
-
-    this function returns the IDCT of the given 2D array/matrix
-    '''
-    # check if the input is 2D
-    assert (len(x.shape) == 2), "ERROR[idct2D()]: NOT A 2D ARRAY!!"
-
-    # get the dimentions
-    N1, N2 = x.shape
-
-    # initialize the resultant IDCT of the array
-    X = np.zeros((N1, N2))
-
-    # perform the IDCT along rows of the given 2D array
-    for k1 in range(N1):
-        X[k1, :] = idct1D(x[k1, :])
-
-    # perform the IDCT along the columns of the resultant array of the above
-    # operation
-    for k2 in range(N2):
-        X[:, k2] = idct1D(X[:, k2])
-
-    # return the IDCT of the given 2D array/matrix
-    return X
 
 
-# function to perform DCT on a 3D matrix (image)
-def dct3D(img):
-    '''
-    this function takes an image matrix (3D RGB) and performs DCT on that image
-    we seperately apply dct2D on each of the three channels and combine them to
-    get an overall dct of the image
-    this also supports any shape of 3D matrix not only 3 channel images
 
-    this function returns the DCT transform of the given RGB image
-    '''
-    # check if the image is 3D
-    assert (len(img.shape) == 3), "ERROR[dct3D()]: NOT A 3D ARRAY!!"
+arr = list(range(4, 10))
+print(dct1D(arr.copy()))
+ARR = dct(arr.copy(), type=2, norm='ortho')
+print(ARR)
+print(idct(ARR, type=2, norm='ortho'))
 
-    # get the number of channels
-    n = img.shape[-1]
-    # initialize an list to store the channels
-    channels = []
-
-    # seperate each channel as 2D matrix
-    for i in range(n):
-        channels.append(img[:, :, i])
-
-    # initialize the resultant DCT transform of the given image
-    res = np.zeros(img.shape)
-
-    # apply and combine the DCT transform of each channel seperately
-    for i in range(n):
-        res[:, :, i] = dct2D(channels[i])
-
-    # return the DCT of the given image
-    return res
-
-
-# function to perform IDCT on a 3D matrix (image)
-def idct3D(img):
-    '''
-    this function takes a DCT of image matrix (3D RGB) and performs IDCT on
-    that image
-    we seperately apply idct2D on each of the three channels and combine them to
-    get an overall idct of the image
-    this also supports any shape of 3D matrix not only 3 channel images
-
-    this function returns the IDCT transform of the given DCT of the RGB image
-    '''
-    # check if the image is 3D
-    assert (len(img.shape) == 3), "ERROR[idct3D()]: NOT A 3D ARRAY!!"
-
-    # get the number of channels
-    n = img.shape[-1]
-    # initialize an list to store the channels
-    channels = []
-
-    # seperate each channel as 2D matrix
-    for i in range(n):
-        channels.append(img[:, :, i])
-
-    # initialize the resultant DCT transform of the given image
-    res = np.zeros(img.shape)
-
-    # apply and combine the DCT transform of each channel seperately
-    for i in range(n):
-        res[:, :, i] = idct2D(channels[i])
-
-    # return the DCT of the given image
-    return res
 
