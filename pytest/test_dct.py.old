@@ -121,8 +121,6 @@ class TestDCT(unittest.TestCase):
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct3D() of shape 27x83x32 FAIL!"
 
-        #------ TOO SLOW -----#
-        '''
         # test for simulated 1024x720x3 image
         arr = np.random.randint(low=0, high=256,
                                 size=(1024, 720, 3), dtype=np.uint8)
@@ -132,6 +130,5 @@ class TestDCT(unittest.TestCase):
         goal = dct3(arr)
         # check if they are same
         assert (np.allclose(res, goal)), "test_dct3D() of shape 1024x720x3 FAIL!"
-        '''
 
 
