@@ -20,12 +20,14 @@ def dct1D(x):
 
     this function returns the dct of the given array
     '''
+    # get the length of the array
+    n = len(x)
+
     # check the input length is 8 at maximum
-    assert (len(x) <= 8), "ERROR! Must have less than 8 elements"
+    assert (n <= 8), "ERROR! Must have less than 8 elements"
 
     # if the length is less than 8 zero pad the rest
-    x = x + [0] * (8 - len(x))
-    # x += x[:8 - len(x)]
+    x = np.pad(x, (0, 8 - n), 'constant')
 
     # required constant vectors
     # Ck = cos((𝝅 / 16) * k)    # k = 0,..., 7
@@ -178,26 +180,30 @@ def idct1D(x):
     f02 = (f11 - f12) / 2       # x2
     f03 = (f10 - f13) / 2       # x3
 
-    x0 = round((f00 + f07) / 2, 8) # x0
-    x1 = round((f01 + f06) / 2, 8) # x1
-    x2 = round((f02 + f05) / 2, 8) # x2
-    x3 = round((f03 + f04) / 2, 8) # x3
-    x4 = round((f03 - f04) / 2, 8) # x4
-    x5 = round((f02 - f05) / 2, 8) # x5
-    x6 = round((f01 - f06) / 2, 8) # x6
-    x7 = round((f00 - f07) / 2, 8) # x7
+    x0 = round((f00 + f07) / 2, 1) # x0
+    x1 = round((f01 + f06) / 2, 1) # x1
+    x2 = round((f02 + f05) / 2, 1) # x2
+    x3 = round((f03 + f04) / 2, 1) # x3
+    x4 = round((f03 - f04) / 2, 1) # x4
+    x5 = round((f02 - f05) / 2, 1) # x5
+    x6 = round((f01 - f06) / 2, 1) # x6
+    x7 = round((f00 - f07) / 2, 1) # x7
 
     # return the reconstructed array
-    return [x0, x1, x2, x3, x4, x5, x6, x7]
+    return [int(x0), int(x1), int(x2), int(x3), int(x4), int(x5), int(x6),
+            int(x7)]
 
 
 
-arr = list(range(4, 12))
-ARR = dct1D(arr.copy())
-print(ARR)
-print(idct1D(ARR))
-print()
-ARR1 = dct(arr.copy(), type=2, norm='ortho')
-print(ARR1)
-print(idct(ARR1, type=2, norm='ortho'))
+# TODO
+def dct2D(x):
+    pass
 
+def idct2D(x):
+    pass
+
+def dct3D(x):
+    pass
+
+def idct3D(x):
+    pass
