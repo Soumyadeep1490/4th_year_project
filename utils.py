@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
-from scipy.fftpack import dct, idct
 
 # Discrete Cosine Transform
 # this is a faster implementation of a faster DCT algorithm than the standard
@@ -10,21 +10,21 @@ from scipy.fftpack import dct, idct
 # it olny requires 5+8 multiplications and 29 additions on a vector of length 8
 
 # function to implement dct faster
-def dct1D(x):
+def _dct1D(x):
     '''
-    this function takes an vector x of length 8 as input and the dct algorithm
-    is applied to it
+    this function takes a numpy array x of length 8 as input and the dct
+    algorithm is applied to it
 
     # Arai, Agui and Nakajama (AAN) DCT Algorithm
     # https://web.stanford.edu/class/ee398a/handouts/lectures/07-TransformCoding.pdf#page=30
 
     this function returns the dct of the given array
     '''
-    # get the length of the array
-    n = len(x)
+    # get the length of the numpy array
+    n = x.size
 
     # check the input length is 8 at maximum
-    assert (n <= 8), "ERROR! Must have less than 8 elements"
+    assert (n <= 8), "[ERROR] Must have less than 8 elements"
 
     # if the length is less than 8 zero pad the rest
     x = np.pad(x, (0, 8 - n), 'constant')
@@ -108,21 +108,25 @@ def dct1D(x):
 
 
 
-def idct1D(x):
+def _idct1D(x):
     '''
-    this function takes a vector of length 8 and applies inverse dct(idct) to
-    obtain the original vector
+    this function takes a numpy array of length 8 and applies inverse dct(idct)
+    to obtain the original vector
 
     for AAN algorithm(see dct1D section) we just have to perform the operations
     in reverse to get the inverse of the dct
 
     this function returns the idct of the given vector
     '''
+    # length of the numpy array
+    n = x.size
+
     # check if the input length is 8 at maimum
-    assert(len(x) <= 8), "ERROR! Must have less than 8 elements"
+    assert(n <= 8), "[ERROR] Must have less than 8 elements"
 
     # if the length is less than 8 zero pad the rest
-    x = x + [0] * (8 - len(x))
+    # x = x + [0] * (8 - len(x))
+    x = np.pad(x, (0, 8 - n), 'constant')
     # x += x[:8 - len(x)]
 
     # required constant vectors
@@ -180,30 +184,105 @@ def idct1D(x):
     f02 = (f11 - f12) / 2       # x2
     f03 = (f10 - f13) / 2       # x3
 
-    x0 = round((f00 + f07) / 2, 1) # x0
-    x1 = round((f01 + f06) / 2, 1) # x1
-    x2 = round((f02 + f05) / 2, 1) # x2
-    x3 = round((f03 + f04) / 2, 1) # x3
-    x4 = round((f03 - f04) / 2, 1) # x4
-    x5 = round((f02 - f05) / 2, 1) # x5
-    x6 = round((f01 - f06) / 2, 1) # x6
-    x7 = round((f00 - f07) / 2, 1) # x7
+    x0 = int(round((f00 + f07) / 2, 1)) # x0
+    x1 = int(round((f01 + f06) / 2, 1)) # x1
+    x2 = int(round((f02 + f05) / 2, 1)) # x2
+    x3 = int(round((f03 + f04) / 2, 1)) # x3
+    x4 = int(round((f03 - f04) / 2, 1)) # x4
+    x5 = int(round((f02 - f05) / 2, 1)) # x5
+    x6 = int(round((f01 - f06) / 2, 1)) # x6
+    x7 = int(round((f00 - f07) / 2, 1)) # x7
 
     # return the reconstructed array
-    return [int(x0), int(x1), int(x2), int(x3), int(x4), int(x5), int(x6),
-            int(x7)]
+    return [x0, x1, x2, x3, x4, x5, x6, x7]
 
+
+def dct1D(x):
+    '''
+    this is the wrapper function for the inner _dtc1D() function
+    this function takes a 1D array of arbitary length and applies the _dct1D()
+    function to 8 element chunks
+
+    this function returns the transformed array of the input 1D array
+    '''
+
+    # length of the array
+    n = len(x)
+
+    # turn the array into a numpy array
+    arr = np.array(x)
+
+    # make sure it's a 1D array
+    assert arr.ndim == 1, "[ERROR] Must be a one dimentional array"
+
+    # get the number of threads
+    workers = n // 8 if n % 8 == 0 else n // 8 + 1
+
+    # generate the 8 elements chunks
+    data = [arr[i: i + 8] for i in range(0, n, 8)]
+
+    # use multithreading to spped up the process
+    with ThreadPoolExecutor(max_workers = workers) as executor:
+        result = list(executor.map(_dct1D, data))
+
+    # restore the transformed chunks into a single 1D array
+    arr = np.concatenate(result, axis=0)
+
+    # return the transformed numpy array
+    return arr
+
+
+def idct1D(x):
+    '''
+    this is the wrapper function for the inner _idtc1D() function
+    this function takes a 1D array of arbitary length and applies the _idct1D()
+    function to 8 element chunks
+
+    this function returns the original array of the transformed input 1D array
+    '''
+
+    # length of the array
+    n = len(x)
+
+    # turn the array into a numpy array
+    arr = np.array(x)
+
+    # make sure it's a 1D array
+    assert arr.ndim == 1, "[ERROR] Must be a one dimentional array"
+
+    # get the number of threads
+    workers = n // 8 if n % 8 == 0 else n // 8 + 1
+
+    # generate the 8 elements chunks
+    data = [arr[i: i + 8] for i in range(0, n, 8)]
+
+    # use multithreading to spped up the process
+    with ThreadPoolExecutor(max_workers = workers) as executor:
+        result = list(executor.map(_idct1D, data))
+
+    # restore the chunks into a single 1D array
+    arr = np.concatenate(result, axis=0)
+
+    # return the original numpy array
+    return arr
 
 
 # TODO
 def dct2D(x):
     pass
 
+
+# TODO
 def idct2D(x):
     pass
 
+
+# TODO
 def dct3D(x):
     pass
 
+
+# TODO
 def idct3D(x):
     pass
+
