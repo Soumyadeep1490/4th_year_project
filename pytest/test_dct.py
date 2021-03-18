@@ -42,6 +42,15 @@ class TestDCT(unittest.TestCase):
         # check if they are same
         assert (np.allclose(arr, inverse_transform[:100])), "test_1D() of length 100 FAIL!"
 
+        # 1D array of length 10000
+        arr = np.random.randint(low=-9999, high=9999, size=10000)
+        # dct1D()
+        transform = dct1D(arr)
+        # idct1D()
+        inverse_transform = idct1D(transform)
+        # check if they are same
+        assert (np.allclose(arr, inverse_transform[:10000])), "test_1D() of length 10000 FAIL!"
+
     def test_2D(self):
         # 2D array of dimention 2x2
         arr = np.array([[64, 39],
